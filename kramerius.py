@@ -8,10 +8,18 @@
 #
 ####################
 
-import requests
-import urllib.request
-import json
 from urllib.parse import urlparse
+import requests
+import json
+import os
+from fpdf import FPDF
+from PIL import Image
+
+def download_file(url, path, verify=True):
+	if not os.path.exists(path):
+		response = requests.get(url, verify=verify)
+		with open(path, "wb") as f:
+			f.write(response.content)
 
 url_ui = input("Zadej webový odkaz na dokument v Digitální knihovně: ")
 url_ui_pars = urlparse(url_ui)
@@ -22,25 +30,49 @@ uuid = path.split('/')[-1]
 
 dokument = requests.get(f'https://{dk}/search/api/v5.0/item/{uuid}/children')
 
+# Vytvoří složku
+dir = uuid.split(":")[-1]
+os.makedirs(dir, exist_ok=True)
+
+# Stáhne soubory
+print("Stahuji soubory...")
 count = 0
 dokJSON = json.loads(dokument.content)
 for page in dokJSON:
 	count += 1
 	fileCount = '{:04d}'.format(count)
-	print(count)
+	print(f'\r{count}', end='')
 	
 	streams = f'https://{dk}/search/api/v5.0/item/{page["pid"]}/streams'
 
-	jpg = requests.get(f'{streams}/IMG_FULL', verify=False)
-	with open(f'{fileCount}.jpg', "wb") as f:
-		f.write(jpg.content)
+	jpg_path = f'{dir}/{fileCount}.jpg'
+	txt_path = f'{dir}/{fileCount}.txt'
+	alto_path = f'{dir}/{fileCount}.xml'
 
-	txt = requests.get(f'{streams}/TEXT_OCR')
-	with open(f'{fileCount}.txt', 'wb') as f:
-		f.write(txt.content)
+	download_file(f'{streams}/IMG_FULL', jpg_path, verify=False)
+	download_file(f'{streams}/TEXT_OCR', txt_path)
+	download_file(f'{streams}/alto', alto_path, verify=False)
 
+# Vytvoří PDF
+print("\nVytvářím PDF...")
+pdf = FPDF()
+for i in range(1, count + 1):
+	print(f'\r{i}', end='')
+	fileCount = '{:04d}'.format(i)
+	img_path = f'{dir}/{fileCount}.jpg'
+	img = Image.open(img_path)
+	pdf.add_page()
+	img_width, img_height = img.size
+	aspect_ratio = img_width / img_height
 
-	alto = requests.get(f'{streams}/alto', verify=False)
-	with open(f'{fileCount}.xml', "wb") as f:
-		f.write(alto.content)		
+	if aspect_ratio > 1:  # Landscape
+		pdf_width = 210
+		pdf_height = pdf_width / aspect_ratio
+	else:  # Portrait
+		pdf_height = 297
+		pdf_width = pdf_height * aspect_ratio
+
+	pdf.image(img_path, 0, 0, pdf_width, pdf_height)
+
+pdf.output(f'{dir}/{dir}.pdf', 'F')
 		
