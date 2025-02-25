@@ -61,6 +61,10 @@ for i in range(1, count + 1):
 	fileCount = '{:04d}'.format(i)
 	img_path = f'{dir}/{fileCount}.jpg'
 	img = Image.open(img_path)
+
+	# Zmenšit obrázek na polovinu
+	img = img.resize((img.width // 2, img.height // 2), Image.LANCZOS)
+
 	pdf.add_page()
 	img_width, img_height = img.size
 	aspect_ratio = img_width / img_height
@@ -72,7 +76,14 @@ for i in range(1, count + 1):
 		pdf_height = 297
 		pdf_width = pdf_height * aspect_ratio
 
-	pdf.image(img_path, 0, 0, pdf_width, pdf_height)
+	# Vytvořit dočasný zmenšený obrázek
+	temp_img_path = f'{dir}/temp_{fileCount}.jpg'
+	img.save(temp_img_path, quality=85)  # Adjust quality to reduce size further
+
+	pdf.image(temp_img_path, 0, 0, pdf_width, pdf_height)
+
+	# Smazat dočasný soubor
+	os.remove(temp_img_path)
 
 pdf.output(f'{dir}/{dir}.pdf', 'F')
 		
