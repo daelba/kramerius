@@ -54,13 +54,9 @@ for page in dokJSON:
 	
 	streams = f'https://{dk}/search/api/v5.0/item/{page["pid"]}/streams'
 
-	jpg_path = f'{uuid}/{fileCount}.jpg'
-	txt_path = f'{uuid}/{fileCount}.txt'
-	alto_path = f'{uuid}/{fileCount}.xml'
-
-	download_file(f'{streams}/IMG_FULL', jpg_path, verify=False)
-	download_file(f'{streams}/TEXT_OCR', txt_path)
-	download_file(f'{streams}/alto', alto_path, verify=False)
+	download_file(f'{streams}/IMG_FULL', f'{uuid}/JPG/{fileCount}.jpg', verify=False)
+	download_file(f'{streams}/TEXT_OCR', f'{uuid}/TXT/{fileCount}.txt')
+	download_file(f'{streams}/alto', f'{uuid}/ALTO/{fileCount}.xml', verify=False)
  
 	pageMeta = {
 		"uuid": f'{page["pid"]}',
