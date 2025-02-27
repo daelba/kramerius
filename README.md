@@ -1,5 +1,7 @@
 Jednoduchý skript ke stažení dokumentu z Digitální knihovny (Kramerius), API verze 5.
 
+Přehled používaných verzí Krameria v digitálních knihovnách: https://registr.digitalniknihovna.cz/
+
 <pre>
   $python3 kramerius.py 
 </pre>
