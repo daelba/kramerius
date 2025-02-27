@@ -29,6 +29,16 @@ path = url_ui_pars.path
 uuid_full = path.split('/')[-1]
 uuid = uuid_full.split(":")[-1]
 
+print(f'https://{dk}/search/api/v5.0/info')
+print(requests.get(f'https://{dk}/search/api/v5.0/info').content)
+print(f'https://{dk}/search/api/client/v7.0/info')
+headers = {
+	'Content-Type': 'application/json'
+}
+
+response_v7 = requests.get(f'https://{dk}/search/api/client/v7.0/info', headers=headers)
+print(response_v7.content)
+
 dokument = requests.get(f'https://{dk}/search/api/v5.0/item/{uuid_full}/children')
 
 # Vytvoří složku
