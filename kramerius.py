@@ -26,13 +26,22 @@ url_ui_pars = urlparse(url_ui)
 
 dk = url_ui_pars.hostname
 path = url_ui_pars.path
-uuid = path.split('/')[-1]
+uuid_full = path.split('/')[-1]
+uuid = uuid_full.split(":")[-1]
 
-dokument = requests.get(f'https://{dk}/search/api/v5.0/item/{uuid}/children')
+dokument = requests.get(f'https://{dk}/search/api/v5.0/item/{uuid_full}/children')
 
 # Vytvoří složku
-dir = uuid.split(":")[-1]
-os.makedirs(dir, exist_ok=True)
+os.makedirs(uuid, exist_ok=True)
+
+# Metadata
+meta = {
+	"document": {
+		"uuid": uuid,
+		"url": f"https://{dk}/view/uuid:{uuid}"
+	},
+	"parts": []
+}
 
 # Stáhne soubory
 print("Stahuji soubory...")
@@ -45,13 +54,23 @@ for page in dokJSON:
 	
 	streams = f'https://{dk}/search/api/v5.0/item/{page["pid"]}/streams'
 
-	jpg_path = f'{dir}/{fileCount}.jpg'
-	txt_path = f'{dir}/{fileCount}.txt'
-	alto_path = f'{dir}/{fileCount}.xml'
+	jpg_path = f'{uuid}/{fileCount}.jpg'
+	txt_path = f'{uuid}/{fileCount}.txt'
+	alto_path = f'{uuid}/{fileCount}.xml'
 
 	download_file(f'{streams}/IMG_FULL', jpg_path, verify=False)
 	download_file(f'{streams}/TEXT_OCR', txt_path)
 	download_file(f'{streams}/alto', alto_path, verify=False)
+ 
+	pageMeta = {
+		"uuid": f'{page["pid"]}',
+		"url": f'https://{dk}/view/uuid:{uuid}?page={page["pid"]}',
+		"file": f'{fileCount}.jpg'
+	}
+	meta["parts"].append(pageMeta)
+
+with open(f'{uuid}/uuid.json','w') as f:
+	json.dump(meta,f,indent=4,ensure_ascii=False)
 
 # Vytvoří PDF
 print("\nVytvářím PDF...")
@@ -59,7 +78,7 @@ pdf = FPDF()
 for i in range(1, count + 1):
 	print(f'\r{i}', end='')
 	fileCount = '{:04d}'.format(i)
-	img_path = f'{dir}/{fileCount}.jpg'
+	img_path = f'{uuid}/{fileCount}.jpg'
 	img = Image.open(img_path)
 
 	# Zmenšit obrázek na polovinu
@@ -77,7 +96,7 @@ for i in range(1, count + 1):
 		pdf_width = pdf_height * aspect_ratio
 
 	# Vytvořit dočasný zmenšený obrázek
-	temp_img_path = f'{dir}/temp_{fileCount}.jpg'
+	temp_img_path = f'{uuid}/temp_{fileCount}.jpg'
 	img.save(temp_img_path, quality=85)  # Adjust quality to reduce size further
 
 	pdf.image(temp_img_path, 0, 0, pdf_width, pdf_height)
@@ -85,5 +104,5 @@ for i in range(1, count + 1):
 	# Smazat dočasný soubor
 	os.remove(temp_img_path)
 
-pdf.output(f'{dir}/{dir}.pdf', 'F')
+pdf.output(f'{uuid}/{uuid}.pdf', 'F')
 		
